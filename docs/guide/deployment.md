@@ -52,6 +52,7 @@ WantedBy=multi-user.target
 | `PORT` | 3000 | 服务端口 |
 | `ENV` | production | 运行环境 |
 | `PROXY_ACCESS_KEY` | - | 代理访问密钥（必填） |
+| `PROXY_ACCESS_KEYS` | - | 额外代理访问密钥（可选，逗号或换行分隔，不授予管理权限） |
 | `ADMIN_ACCESS_KEY` | - | 管理界面密钥（可选） |
 | `QUIET_POLLING_LOGS` | true | 静默轮询日志 |
 | `MAX_REQUEST_BODY_SIZE_MB` | 50 | 请求体大小限制 |

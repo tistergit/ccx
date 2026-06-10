@@ -150,9 +150,8 @@ func getAPIKey(c *gin.Context) string {
 func ProxyAuthMiddleware(envCfg *config.EnvConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		providedKey := getAPIKey(c)
-		expectedKey := envCfg.ProxyAccessKey
 
-		if providedKey == "" || providedKey != expectedKey {
+		if !envCfg.IsValidProxyAccessKey(providedKey) {
 			if envCfg.ShouldLog("warn") {
 				log.Printf("[Auth-Failed] 代理访问密钥验证失败 - IP: %s", c.ClientIP())
 			}

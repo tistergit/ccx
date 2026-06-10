@@ -185,3 +185,46 @@ func TestWebAuthMiddleware_AllowsV1BetaRoutesWhenWebUIDisabled(t *testing.T) {
 		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
 	}
 }
+
+func TestProxyAuthMiddleware_AllowsAdditionalProxyAccessKeys(t *testing.T) {
+	envCfg := &config.EnvConfig{
+		ProxyAccessKey:  "primary-key",
+		ProxyAccessKeys: []string{"primary-key", "client-a"},
+	}
+
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(ProxyAuthMiddleware(envCfg))
+	r.GET("/v1/models", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"ok": true})
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/models", nil)
+	req.Header.Set("x-api-key", "client-a")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestWebAuthMiddleware_AdditionalProxyKeysDoNotGrantAdminAccess(t *testing.T) {
+	envCfg := &config.EnvConfig{
+		ProxyAccessKey:  "primary-key",
+		ProxyAccessKeys: []string{"primary-key", "client-a"},
+		EnableWebUI:     true,
+	}
+	router := setupRouterWithAuth(envCfg)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/channels", nil)
+	req.Header.Set("x-api-key", "client-a")
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusUnauthorized)
+	}
+}

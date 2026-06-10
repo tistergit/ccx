@@ -157,6 +157,7 @@ PORT=3688
 ENV=production
 ENABLE_WEB_UI=true
 PROXY_ACCESS_KEY=your-proxy-access-key
+PROXY_ACCESS_KEYS=client-a-key,client-b-key
 ADMIN_ACCESS_KEY=your-admin-secret-key
 APP_UI_LANGUAGE=en
 LOG_LEVEL=info

@@ -1,8 +1,10 @@
 package config
 
 import (
+	"crypto/subtle"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type EnvConfig struct {
@@ -11,6 +13,7 @@ type EnvConfig struct {
 	EnableWebUI          bool
 	UILanguage           string
 	ProxyAccessKey       string
+	ProxyAccessKeys      []string
 	AdminAccessKey       string // 管理 API 独立密钥（可选，未设置时回退到 ProxyAccessKey）
 	LogLevel             string
 	EnableRequestLogs    bool
@@ -53,12 +56,15 @@ func NewEnvConfig() *EnvConfig {
 		env = getEnv("NODE_ENV", "development")
 	}
 
+	proxyAccessKey := getEnv("PROXY_ACCESS_KEY", "your-proxy-access-key")
+
 	return &EnvConfig{
 		Port:                 getEnvAsInt("PORT", 3000),
 		Env:                  env,
 		EnableWebUI:          getEnv("ENABLE_WEB_UI", "true") != "false",
 		UILanguage:           normalizeUILanguage(getEnv("APP_UI_LANGUAGE", "zh-CN")),
-		ProxyAccessKey:       getEnv("PROXY_ACCESS_KEY", "your-proxy-access-key"),
+		ProxyAccessKey:       proxyAccessKey,
+		ProxyAccessKeys:      parseProxyAccessKeys(proxyAccessKey, getEnv("PROXY_ACCESS_KEYS", "")),
 		AdminAccessKey:       getEnv("ADMIN_ACCESS_KEY", ""), // 空值时回退到 ProxyAccessKey
 		LogLevel:             getEnv("LOG_LEVEL", "info"),
 		EnableRequestLogs:    getEnv("ENABLE_REQUEST_LOGS", "true") != "false",
@@ -94,6 +100,31 @@ func NewEnvConfig() *EnvConfig {
 	}
 }
 
+func parseProxyAccessKeys(primaryKey string, additionalKeys string) []string {
+	seen := make(map[string]struct{})
+	keys := make([]string, 0, 1)
+	addKey := func(key string) {
+		key = strings.TrimSpace(key)
+		if key == "" {
+			return
+		}
+		if _, ok := seen[key]; ok {
+			return
+		}
+		seen[key] = struct{}{}
+		keys = append(keys, key)
+	}
+
+	addKey(primaryKey)
+	for _, key := range strings.FieldsFunc(additionalKeys, func(r rune) bool {
+		return r == ',' || r == '\n' || r == '\r'
+	}) {
+		addKey(key)
+	}
+
+	return keys
+}
+
 func normalizeUILanguage(value string) string {
 	switch value {
 	case "en", "EN", "en-US", "en-us":
@@ -118,6 +149,36 @@ func (c *EnvConfig) GetAdminAccessKey() string {
 		return c.AdminAccessKey
 	}
 	return c.ProxyAccessKey
+}
+
+func (c *EnvConfig) IsValidProxyAccessKey(providedKey string) bool {
+	if providedKey == "" {
+		return false
+	}
+	matches := func(key string) bool {
+		if key == "" {
+			return false
+		}
+		return subtle.ConstantTimeCompare([]byte(providedKey), []byte(key)) == 1
+	}
+	if matches(c.ProxyAccessKey) {
+		return true
+	}
+	for _, key := range c.ProxyAccessKeys {
+		if matches(key) {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *EnvConfig) HasNonDefaultProxyAccessKey() bool {
+	for _, key := range c.ProxyAccessKeys {
+		if key != "" && key != "your-proxy-access-key" {
+			return true
+		}
+	}
+	return c.ProxyAccessKey != "" && c.ProxyAccessKey != "your-proxy-access-key"
 }
 
 // IsProduction 是否为生产环境
