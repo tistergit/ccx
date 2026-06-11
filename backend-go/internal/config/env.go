@@ -13,7 +13,7 @@ type EnvConfig struct {
 	EnableWebUI          bool
 	UILanguage           string
 	ProxyAccessKey       string
-	ProxyAccessKeys      []string
+	ExtendAccessKeys     []string
 	AdminAccessKey       string // 管理 API 独立密钥（可选，未设置时回退到 ProxyAccessKey）
 	LogLevel             string
 	EnableRequestLogs    bool
@@ -64,7 +64,7 @@ func NewEnvConfig() *EnvConfig {
 		EnableWebUI:          getEnv("ENABLE_WEB_UI", "true") != "false",
 		UILanguage:           normalizeUILanguage(getEnv("APP_UI_LANGUAGE", "zh-CN")),
 		ProxyAccessKey:       proxyAccessKey,
-		ProxyAccessKeys:      parseProxyAccessKeys(proxyAccessKey, getEnv("PROXY_ACCESS_KEYS", "")),
+		ExtendAccessKeys:     parseExtendAccessKeys(getEnv("EXTEND_ACCESS_KEY", "")),
 		AdminAccessKey:       getEnv("ADMIN_ACCESS_KEY", ""), // 空值时回退到 ProxyAccessKey
 		LogLevel:             getEnv("LOG_LEVEL", "info"),
 		EnableRequestLogs:    getEnv("ENABLE_REQUEST_LOGS", "true") != "false",
@@ -100,9 +100,9 @@ func NewEnvConfig() *EnvConfig {
 	}
 }
 
-func parseProxyAccessKeys(primaryKey string, additionalKeys string) []string {
+func parseExtendAccessKeys(value string) []string {
 	seen := make(map[string]struct{})
-	keys := make([]string, 0, 1)
+	keys := make([]string, 0)
 	addKey := func(key string) {
 		key = strings.TrimSpace(key)
 		if key == "" {
@@ -115,10 +115,7 @@ func parseProxyAccessKeys(primaryKey string, additionalKeys string) []string {
 		keys = append(keys, key)
 	}
 
-	addKey(primaryKey)
-	for _, key := range strings.FieldsFunc(additionalKeys, func(r rune) bool {
-		return r == ',' || r == '\n' || r == '\r'
-	}) {
+	for _, key := range strings.Split(value, ",") {
 		addKey(key)
 	}
 
@@ -164,7 +161,7 @@ func (c *EnvConfig) IsValidProxyAccessKey(providedKey string) bool {
 	if matches(c.ProxyAccessKey) {
 		return true
 	}
-	for _, key := range c.ProxyAccessKeys {
+	for _, key := range c.ExtendAccessKeys {
 		if matches(key) {
 			return true
 		}
@@ -173,7 +170,7 @@ func (c *EnvConfig) IsValidProxyAccessKey(providedKey string) bool {
 }
 
 func (c *EnvConfig) HasNonDefaultProxyAccessKey() bool {
-	for _, key := range c.ProxyAccessKeys {
+	for _, key := range c.ExtendAccessKeys {
 		if key != "" && key != "your-proxy-access-key" {
 			return true
 		}

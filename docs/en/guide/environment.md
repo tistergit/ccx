@@ -46,7 +46,7 @@ ENV=production                         # 运行环境: development | production
 
 # 访问控制
 PROXY_ACCESS_KEY=your-secret-key       # 代理访问密钥（代理 API 使用，必须设置）
-PROXY_ACCESS_KEYS=client-a,client-b    # 可选额外代理密钥，逗号或换行分隔；不授予管理权限
+EXTEND_ACCESS_KEY=client-a,client-b    # Optional extended proxy keys, comma-separated; does not grant admin access
 ADMIN_ACCESS_KEY=your-admin-key        # 可选管理密钥（管理界面和 /api/* 使用；未设置时回退到 PROXY_ACCESS_KEY）
 
 # Web UI

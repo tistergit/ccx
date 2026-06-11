@@ -186,10 +186,10 @@ func TestWebAuthMiddleware_AllowsV1BetaRoutesWhenWebUIDisabled(t *testing.T) {
 	}
 }
 
-func TestProxyAuthMiddleware_AllowsAdditionalProxyAccessKeys(t *testing.T) {
+func TestProxyAuthMiddleware_AllowsExtendAccessKeys(t *testing.T) {
 	envCfg := &config.EnvConfig{
-		ProxyAccessKey:  "primary-key",
-		ProxyAccessKeys: []string{"primary-key", "client-a"},
+		ProxyAccessKey:   "primary-key",
+		ExtendAccessKeys: []string{"client-a"},
 	}
 
 	gin.SetMode(gin.TestMode)
@@ -212,9 +212,9 @@ func TestProxyAuthMiddleware_AllowsAdditionalProxyAccessKeys(t *testing.T) {
 
 func TestWebAuthMiddleware_AdditionalProxyKeysDoNotGrantAdminAccess(t *testing.T) {
 	envCfg := &config.EnvConfig{
-		ProxyAccessKey:  "primary-key",
-		ProxyAccessKeys: []string{"primary-key", "client-a"},
-		EnableWebUI:     true,
+		ProxyAccessKey:   "primary-key",
+		ExtendAccessKeys: []string{"client-a"},
+		EnableWebUI:      true,
 	}
 	router := setupRouterWithAuth(envCfg)
 

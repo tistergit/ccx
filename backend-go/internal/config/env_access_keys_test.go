@@ -2,27 +2,27 @@ package config
 
 import "testing"
 
-func TestNewEnvConfig_ProxyAccessKeysIncludesPrimaryAndAdditionalKeys(t *testing.T) {
+func TestNewEnvConfig_ExtendAccessKeysParsesCommaSeparatedKeys(t *testing.T) {
 	t.Setenv("PROXY_ACCESS_KEY", "primary-key")
-	t.Setenv("PROXY_ACCESS_KEYS", "client-a, client-b\nclient-c,,client-a")
+	t.Setenv("EXTEND_ACCESS_KEY", "client-a, client-b,,client-a")
 
 	envCfg := NewEnvConfig()
 
-	want := []string{"primary-key", "client-a", "client-b", "client-c"}
-	if len(envCfg.ProxyAccessKeys) != len(want) {
-		t.Fatalf("ProxyAccessKeys length = %d, want %d: %#v", len(envCfg.ProxyAccessKeys), len(want), envCfg.ProxyAccessKeys)
+	want := []string{"client-a", "client-b"}
+	if len(envCfg.ExtendAccessKeys) != len(want) {
+		t.Fatalf("ExtendAccessKeys length = %d, want %d: %#v", len(envCfg.ExtendAccessKeys), len(want), envCfg.ExtendAccessKeys)
 	}
 	for i, key := range want {
-		if envCfg.ProxyAccessKeys[i] != key {
-			t.Fatalf("ProxyAccessKeys[%d] = %q, want %q: %#v", i, envCfg.ProxyAccessKeys[i], key, envCfg.ProxyAccessKeys)
+		if envCfg.ExtendAccessKeys[i] != key {
+			t.Fatalf("ExtendAccessKeys[%d] = %q, want %q: %#v", i, envCfg.ExtendAccessKeys[i], key, envCfg.ExtendAccessKeys)
 		}
 	}
 }
 
 func TestEnvConfig_IsValidProxyAccessKey(t *testing.T) {
 	envCfg := &EnvConfig{
-		ProxyAccessKey:  "primary-key",
-		ProxyAccessKeys: []string{"primary-key", "client-a", "client-b"},
+		ProxyAccessKey:   "primary-key",
+		ExtendAccessKeys: []string{"client-a", "client-b"},
 	}
 
 	tests := []struct {

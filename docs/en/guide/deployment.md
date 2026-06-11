@@ -52,7 +52,7 @@ See `docs/service/com.ccx.gateway.plist` for reference.
 | `PORT` | 3000 | Server port |
 | `ENV` | production | Runtime environment |
 | `PROXY_ACCESS_KEY` | - | Proxy access key (required) |
-| `PROXY_ACCESS_KEYS` | - | Additional proxy access keys (optional, comma- or newline-separated; does not grant admin access) |
+| `EXTEND_ACCESS_KEY` | - | Extended proxy access keys (optional, comma-separated; does not grant admin access) |
 | `ADMIN_ACCESS_KEY` | - | Admin console key (optional) |
 | `QUIET_POLLING_LOGS` | true | Suppress polling logs |
 | `MAX_REQUEST_BODY_SIZE_MB` | 50 | Max request body size |
