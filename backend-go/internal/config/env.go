@@ -1,7 +1,9 @@
 package config
 
 import (
+	"crypto/sha256"
 	"crypto/subtle"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -46,6 +48,10 @@ type EnvConfig struct {
 	LogMaxAge     int  // 保留的旧日志文件最大天数
 	LogCompress   bool // 是否压缩旧日志文件
 	LogToConsole  bool // 是否同时输出到控制台
+}
+
+type ProxyAccessKeyMatch struct {
+	LogLabel string
 }
 
 // NewEnvConfig 创建环境配置
@@ -149,8 +155,13 @@ func (c *EnvConfig) GetAdminAccessKey() string {
 }
 
 func (c *EnvConfig) IsValidProxyAccessKey(providedKey string) bool {
+	_, ok := c.MatchProxyAccessKey(providedKey)
+	return ok
+}
+
+func (c *EnvConfig) MatchProxyAccessKey(providedKey string) (ProxyAccessKeyMatch, bool) {
 	if providedKey == "" {
-		return false
+		return ProxyAccessKeyMatch{}, false
 	}
 	matches := func(key string) bool {
 		if key == "" {
@@ -159,14 +170,19 @@ func (c *EnvConfig) IsValidProxyAccessKey(providedKey string) bool {
 		return subtle.ConstantTimeCompare([]byte(providedKey), []byte(key)) == 1
 	}
 	if matches(c.ProxyAccessKey) {
-		return true
+		return ProxyAccessKeyMatch{LogLabel: accessKeyLogLabel("primary", c.ProxyAccessKey)}, true
 	}
-	for _, key := range c.ExtendAccessKeys {
+	for i, key := range c.ExtendAccessKeys {
 		if matches(key) {
-			return true
+			return ProxyAccessKeyMatch{LogLabel: accessKeyLogLabel(fmt.Sprintf("ext#%d", i+1), key)}, true
 		}
 	}
-	return false
+	return ProxyAccessKeyMatch{}, false
+}
+
+func accessKeyLogLabel(prefix string, key string) string {
+	sum := sha256.Sum256([]byte(key))
+	return fmt.Sprintf("%s:%x", prefix, sum[:4])
 }
 
 func (c *EnvConfig) HasNonDefaultProxyAccessKey() bool {

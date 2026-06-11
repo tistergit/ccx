@@ -210,6 +210,35 @@ func TestProxyAuthMiddleware_AllowsExtendAccessKeys(t *testing.T) {
 	}
 }
 
+func TestProxyAuthMiddleware_StoresMatchedAccessKeyLogLabel(t *testing.T) {
+	envCfg := &config.EnvConfig{
+		ProxyAccessKey:   "primary-key",
+		ExtendAccessKeys: []string{"client-a"},
+	}
+
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(ProxyAuthMiddleware(envCfg))
+	r.GET("/v1/models", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"accessKey": c.GetString(ProxyAccessKeyLogLabelKey),
+		})
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/models", nil)
+	req.Header.Set("x-api-key", "client-a")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	if body := w.Body.String(); body != `{"accessKey":"ext#1:e0b107f9"}` {
+		t.Fatalf("body = %s, want access key label", body)
+	}
+}
+
 func TestWebAuthMiddleware_AdditionalProxyKeysDoNotGrantAdminAccess(t *testing.T) {
 	envCfg := &config.EnvConfig{
 		ProxyAccessKey:   "primary-key",

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/BenedictKing/ccx/internal/middleware"
 	"github.com/BenedictKing/ccx/internal/scheduler"
 	"github.com/gin-gonic/gin"
 )
@@ -19,8 +20,9 @@ const (
 type httpRequestLogContextKey struct{}
 
 type RequestLogContext struct {
-	SessionID string
-	Round     int
+	SessionID      string
+	Round          int
+	AccessKeyLabel string
 }
 
 func SetRequestLogContext(c *gin.Context, sessionID string, round int) {
@@ -28,8 +30,9 @@ func SetRequestLogContext(c *gin.Context, sessionID string, round int) {
 		return
 	}
 	c.Set(requestLogContextKey, RequestLogContext{
-		SessionID: strings.TrimSpace(sessionID),
-		Round:     round,
+		SessionID:      strings.TrimSpace(sessionID),
+		Round:          round,
+		AccessKeyLabel: strings.TrimSpace(c.GetString(middleware.ProxyAccessKeyLogLabelKey)),
 	})
 }
 
@@ -85,6 +88,9 @@ func requestLogTag(ctx RequestLogContext) string {
 	}
 	if ctx.Round > 0 {
 		parts = append(parts, fmt.Sprintf("round=%d", ctx.Round))
+	}
+	if ctx.AccessKeyLabel != "" {
+		parts = append(parts, "accessKey="+ctx.AccessKeyLabel)
 	}
 	if len(parts) == 0 {
 		return ""

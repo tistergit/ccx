@@ -9,6 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const ProxyAccessKeyLogLabelKey = "proxyAccessKeyLogLabel"
+
 // WebAuthMiddleware Web 访问控制中间件
 func WebAuthMiddleware(envCfg *config.EnvConfig, cfgManager *config.ConfigManager) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -150,8 +152,9 @@ func getAPIKey(c *gin.Context) string {
 func ProxyAuthMiddleware(envCfg *config.EnvConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		providedKey := getAPIKey(c)
+		match, ok := envCfg.MatchProxyAccessKey(providedKey)
 
-		if !envCfg.IsValidProxyAccessKey(providedKey) {
+		if !ok {
 			if envCfg.ShouldLog("warn") {
 				log.Printf("[Auth-Failed] 代理访问密钥验证失败 - IP: %s", c.ClientIP())
 			}
@@ -163,6 +166,7 @@ func ProxyAuthMiddleware(envCfg *config.EnvConfig) gin.HandlerFunc {
 			return
 		}
 
+		c.Set(ProxyAccessKeyLogLabelKey, match.LogLabel)
 		c.Next()
 	}
 }
